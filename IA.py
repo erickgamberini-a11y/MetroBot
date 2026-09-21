@@ -11,7 +11,7 @@ from linhas import TODAS_ESTACOES, LOCAIS
 
 
 PROVEDOR = "groq" 
-MODELO_GROQ = "llama-3.3-70b-versatile" 
+MODELO_GROQ = "openai/gpt-oss-20b"
 
 def obter_chave_groq():
     chave = os.getenv("GROQ_API_KEY")
@@ -42,10 +42,19 @@ def resolver_nome(nome):
     if not nome: 
         return None
     alvo = normalizar(nome).strip()
+    
     for estacao in TODAS_ESTACOES:
         if normalizar(estacao) == alvo: return ("estacao", estacao)
     for local in LOCAIS:
         if normalizar(local) == alvo: return ("local", local)
+        
+    for estacao in TODAS_ESTACOES:
+        if alvo in normalizar(estacao) or normalizar(estacao) in alvo: 
+            return ("estacao", estacao)
+    for local in LOCAIS:
+        if alvo in normalizar(local) or normalizar(local) in alvo: 
+            return ("local", local)
+            
     return None
 
 PROMPT_INTERPRETE = """Você é o módulo de INTERPRETAÇÃO do MetrôBot SP.
@@ -60,9 +69,10 @@ Responda APENAS com um JSON neste formato:
 "acessibilidade": <true ou false>}}
 
 Regras: 
-- Use SOMENTE nomes das listas acima, escritos exatamente como aparecem.
+- O usuário frequentemente usa apelidos ou nomes parciais (ex: "Itaquera", "HC", "Paulista", "Mackenzie"). Você DEVE mapear esses apelidos para o NOME EXATO correspondente nas listas acima (ex: "Corinthians-Itaquera", "Clínicas", "Consolação").
+- O valor no JSON deve ser rigorosamente um dos itens das listas.
 - acessibilidade é true se o passageiro mencionar cadeira de rodas, mobilidade reduzida, muletas, carrinho de bebê ou precisar de elevador.
-Se não souber algum campo, use null. Nunca invente nomes."""
+Se não souber algum campo de forma alguma, use null."""
 
 def interpretar_offline(texto):
     texto_min = texto.lower()
